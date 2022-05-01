@@ -12,5 +12,7 @@ namespace ContactAPI.Data
         }
 
         public DbSet<Person> Person { get; set; }
+
+        public DbSet<Contact> Contact { get; set; }
     }
 }

@@ -1,11 +1,14 @@
-﻿namespace ContactAPI.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace ContactAPI.Models
 {
     public class Person
     {
-        public int? Id { get; set; }
+        [Key]
+        public int PersonId { get; set; }
         public string? FirstName { get; set; }
         public string? LastName { get; set; } 
         public string? Picture { get; set; }
-        public List<Contact>? Contacts { get; set; }
+        public ICollection<Contact>? Contacts { get; set; }
     }
 }
