@@ -1,6 +1,7 @@
 using ContactAPI.Data;
 using ContactAPI.Models;
 using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<ContactContext>(options =>
@@ -9,6 +10,11 @@ builder.Services.AddDbContext<ContactContext>(options =>
 // Add services to the container.
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddCors(services => services.AddPolicy("MySpecifOrigin", police =>
+{
+    police.WithOrigins("https://listcontact.azurewebsites.net").AllowAnyMethod().AllowAnyHeader();
+}));
 
 var app = builder.Build();
 
@@ -20,6 +26,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors("MySpecifOrigin");
 
 app.MapGet("/people", async (ContactContext _context) => await _context.Person.ToListAsync());
 
