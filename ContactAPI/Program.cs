@@ -13,7 +13,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddCors(services => services.AddPolicy("MySpecifOrigin", police =>
 {
-    police.WithOrigins(builder.Configuration.GetSection("HostFrontEnd").ToString()).AllowAnyMethod().AllowAnyHeader();
+    police.WithOrigins(builder.Configuration.GetSection("HostFrontEnd").Value).AllowAnyMethod().AllowAnyHeader();
 }));
 
 var app = builder.Build();
