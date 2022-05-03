@@ -25,11 +25,6 @@ namespace ContactAPI.Models
         public DateTime DateCreated { get; set; }
         public DateTime DateLastUpdate { get; set; }
 
-        public Person()
-        {
-            PersonId = Guid.NewGuid();
-        }
-
         public Person(string firstName, string lastName)
         {
             PersonId = Guid.NewGuid();

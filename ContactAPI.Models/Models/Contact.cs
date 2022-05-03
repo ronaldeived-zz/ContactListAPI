@@ -18,13 +18,9 @@ namespace ContactAPI.Models
         public DateTime DateCreated { get; set; }
         public DateTime DateLastUpdate { get; set; }
 
-        public Contact()
-        {
-            ContactId = Guid.NewGuid();
-        }
-
         public Contact(ETypeContact type, string value)
         {
+            ContactId = Guid.NewGuid();
             Type = (ETypeContact) Validate((int) type);
             Value = Validate(value);
         }

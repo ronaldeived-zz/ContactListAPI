@@ -13,7 +13,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddCors(services => services.AddPolicy("MySpecifOrigin", police =>
 {
-    police.WithOrigins("https://listcontact.azurewebsites.net").AllowAnyMethod().AllowAnyHeader();
+    police.WithOrigins(builder.Configuration.GetSection("HostFrontEnd").ToString()).AllowAnyMethod().AllowAnyHeader();
 }));
 
 var app = builder.Build();
@@ -30,10 +30,11 @@ app.UseCors("MySpecifOrigin");
 
 app.MapGet("/people", async (ContactContext _context) => await _context.Person.ToListAsync());
 
-app.MapGet("/person/{id}", async (int id, ContactContext _context) => await _context.Person.FindAsync(id));
+app.MapGet("/person/{personId}", async (Guid personId, ContactContext _context) => await _context.Person.FirstOrDefaultAsync(p=> p.PersonId == personId));
 
-app.MapDelete("/person/{id}", async (int id, ContactContext _context) => {
-    var person = await _context.Person.FindAsync(id);
+app.MapDelete("/person/{personId}", async (Guid personId, ContactContext _context) =>
+{
+    var person = await _context.Person.FirstOrDefaultAsync(p=> p.PersonId == personId);
     if (person != null)
     {
         _context.Person.Remove(person);
@@ -42,13 +43,26 @@ app.MapDelete("/person/{id}", async (int id, ContactContext _context) => {
     return Results.NoContent();
 });
 
-app.MapPut("/person/{id}", async (int id, PersonViewModel person ,ContactContext _context) => {
-    _context.Entry(person).State = EntityState.Modified;
+app.MapPut("/person/{personId}", async (Guid personId, PersonViewModel personViewModel, ContactContext _context) =>
+{
+    PersonMapping personMapping = new PersonMapping();
+
+    var personfromDatabase = await _context.Person.FirstOrDefaultAsync(c => c.PersonId == personId);
+    var currentPerson = personMapping.PersonViewModelToPerson(personViewModel);
+
+    currentPerson = personMapping.PersonFromDBUpdateData(currentPerson, personfromDatabase);
+
+    _context.ChangeTracker.Clear();
+
+    _context.Entry(currentPerson).State = EntityState.Modified;
     await _context.SaveChangesAsync();
-    return person;
+    return currentPerson;
+
+
 });
 
-app.MapPost("/person", async (PersonViewModel person, ContactContext _context) => {
+app.MapPost("/person", async (PersonViewModel person, ContactContext _context) =>
+{
     PersonMapping personMapping = new PersonMapping();
     var newPerson = personMapping.PersonViewModelToPerson(person);
     await _context.Person.AddAsync(newPerson);
@@ -56,37 +70,49 @@ app.MapPost("/person", async (PersonViewModel person, ContactContext _context) =
     return Results.NoContent();
 });
 
-//app.MapGet("{idPerson}/contacts", async (int idPerson, ContactContext _context) => await _context.Contact.Where(c => c.PersonId == idPerson).ToListAsync());
+app.MapGet("{idPerson}/contacts", async (Guid idPerson, ContactContext _context) => await _context.Contact.Where(c => c.PersonId == idPerson).ToListAsync());
 
-//app.MapGet("{idPerson}/contact/{contactId}", async (int idPerson, Guid contactId, ContactContext _context) => await _context.Contact.FirstOrDefaultAsync(c => c.PersonId == idPerson && c.ContactId == contactId));
+app.MapGet("/contact/{contactId}", async (Guid contactId, ContactContext _context) => await _context.Contact.FirstOrDefaultAsync(c => c.ContactId == contactId));
 
-//app.MapDelete("{idPerson}/contact/{contactId}", async (int idPerson, Guid contactId, ContactContext _context) => {
-//    var contact = await _context.Contact.FirstOrDefaultAsync(c => c.PersonId == idPerson && c.ContactId == contactId);
-//    if (contact != null)
-//    {
-//        _context.Contact.Remove(contact);
-//        await _context.SaveChangesAsync();
-//    }
-//    return Results.NoContent();
-//});
+app.MapDelete("/contact/{contactId}", async (Guid contactId, ContactContext _context) =>
+{
+    var contact = await _context.Contact.FirstOrDefaultAsync(c => c.ContactId == contactId);
+    if (contact != null)
+    {
+        _context.Contact.Remove(contact);
+        await _context.SaveChangesAsync();
+    }
+    return Results.NoContent();
+});
 
-//app.MapPut("/contact/{id}", async (int id, Contact contact, ContactContext _context) =>
-//{
-//    _context.Entry(contact).State = EntityState.Modified;
-//    await _context.SaveChangesAsync();
-//    return contact;
-//});
+app.MapPut("/contact/{contactId}", async (Guid contactId, ContactViewModel contact, ContactContext _context) =>
+{
+    ContactMapping contactMapping = new ContactMapping();
+    var currentContact = contactMapping.ContactViewModelToContact(contact);
+    var contactfromDatabase = await _context.Contact.FirstOrDefaultAsync(c => c.ContactId == contactId);
 
-//app.MapPost("/contact", async (ContactViewModel contact, ContactContext _context) =>
-//{
-//    if(await _context.Person.FindAsync(contact.PersonId) != null)
-//    {
-//        _context.Contact.AddAsync(contact);
-//        await _context.SaveChangesAsync();
-//        return Results.NoContent();
-//    }
+    currentContact = contactMapping.ContactFromDBUpdateData(currentContact, contactfromDatabase);
 
-//    return Results.BadRequest("There is no person to add a contact.");
-//});
+    _context.ChangeTracker.Clear();
+
+    _context.Entry(currentContact).State = EntityState.Modified;
+    await _context.SaveChangesAsync();
+    return contact;
+});
+
+app.MapPost("{personId}/contact", async (Guid personId, ContactViewModel contact, ContactContext _context) =>
+{
+    ContactMapping contactMapping = new ContactMapping();
+    var newContact = contactMapping.ContactViewModelToContact(contact);
+    if (await _context.Person.FindAsync(personId) != null)
+    {
+        newContact.PersonId = personId;
+        await _context.Contact.AddAsync(newContact);
+        await _context.SaveChangesAsync();
+        return Results.NoContent();
+    }
+
+    return Results.BadRequest("There is no person to add a contact.");
+});
 
 app.Run();

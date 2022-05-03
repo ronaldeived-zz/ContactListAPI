@@ -12,9 +12,16 @@ namespace ContactAPI.Mapping
             {
                 FirstName = personViewModel.FirstName,
                 LastName = personViewModel.LastName,
-                Picture =  personViewModel.Picture,
-                Contacts = contactMapping.ContactsViewModelToContact(personViewModel.Contacts)
+                Picture = personViewModel.Picture
             };
+        }
+
+        public Person PersonFromDBUpdateData(Person currentPerson, Person personFromDB)
+        {
+            currentPerson.PersonId = personFromDB.PersonId;
+            currentPerson.DateCreated = personFromDB.DateCreated;
+
+            return currentPerson;
         }
     }
 }
